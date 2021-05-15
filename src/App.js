@@ -1,22 +1,46 @@
 import logo from './logo.svg';
 import './App.css';
+import  * as data from './data.js';
+import { Graph } from "react-d3-graph";
+
+// graph payload (with minimalist structure)
+
+
+// the graph configuration, just override the ones you need
+const myConfig = {
+  nodeHighlightBehavior: true,
+  node: {
+    color: "lightgreen",
+    size: 120,
+    highlightStrokeColor: "blue",
+  },
+  link: {
+    highlightColor: "lightblue",
+  },
+};
+
+const onClickNode = function(nodeId) {
+  window.alert(`Clicked node ${nodeId}`);
+};
+
+const onClickLink = function(source, target) {
+  window.alert(`Clicked link between ${source} and ${target}`);
+};
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+        <Graph
+          id="graph-id" // id is mandatory
+          data={data}
+          config={myConfig}
+          onClickNode={onClickNode}
+          onClickLink={onClickLink}
+        />
         <p>
-          Hello, World
+          For Justice!
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
       </header>
     </div>
   );
