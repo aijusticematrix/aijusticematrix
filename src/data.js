@@ -1,4 +1,4 @@
-module.exports = {
+export const data = {
   nodes: [
     {
       id: 1,
@@ -82,6 +82,3 @@ module.exports = {
     { source: "Industry", target: "Money" },
     ],
 };
-		
-			
-			

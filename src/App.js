@@ -1,10 +1,7 @@
 import logo from './logo.svg';
 import './App.css';
-import  * as data from './data.js';
+import { data } from './data.js';
 import { Graph } from "react-d3-graph";
-
-// graph payload (with minimalist structure)
-
 
 // the graph configuration, just override the ones you need
 const myConfig = {
