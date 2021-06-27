@@ -36,11 +36,8 @@ const RelatedNetwork = (props) => {
 		<div
 			ref={visJsRef}
 			style={{
-				height: `1024px`,
-				width: `1900px`,
-				maxWidth: "1024",
-				minWidth: "30%",
-				maxHeight: "512px"
+				height: `100%`,
+				width: `100%`,
 			}}
 		/>
 	);

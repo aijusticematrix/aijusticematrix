@@ -1,6 +1,4 @@
 import './App.css';
-import { data } from './data.js';
-import { Graph } from "react-d3-graph";
 import { useForm, useField, splitFormProps } from "react-form";
 import React from "react";
 import RelatedNetwork from "./RelatedNetwork";
@@ -8,12 +6,6 @@ import { DataSet } from "vis-data";
 
 
 
-function validateAddressStreet(value) {
-  if (!value) {
-    return "A street is required";
-  }
-  return false;
-}
 
 function SelectField(props) {
   const [field, fieldOptions, { options, ...rest }] = splitFormProps(props);
@@ -82,7 +74,11 @@ const InputArea = React.forwardRef((props, ref) => {
   // Build the field
   return (
     <>
-      <textarea {...getInputProps({ ref, ...rest })} />{" "}
+      <textarea style={{
+        margin: "0px",
+        width: "100%",
+        height: "140px"
+      }} {...getInputProps({ ref, ...rest })} />{" "}
       {isValidating ? (
         <em>Validating...</em>
       ) : isTouched && error ? (
@@ -102,8 +98,12 @@ function MyForm(props) {
     onSubmit: async (values, instance) => {
       // onSubmit (and everything else in React Form)
       // has async support out-of-the-box
-      await props.addMessageToNode(props.selectedNode, values.message);
-      console.log(values, "Huzzah!");
+      if (props.selectedNode)
+      {
+        await props.addMessageToNode(props.selectedNode, values.message);
+      } else {
+        await props.addNewNodeToServer(props.selectedNode, values.message);             
+      }
     },
     debugForm: false
   });
@@ -112,10 +112,10 @@ function MyForm(props) {
     <Form>
         {!props.selectedNode && 
       <div>
-        <label>
-            New node name: {" "}
-            <InputField field="new_node" />
-          </label>
+        <header> Create a new node </header>
+        <p>
+          <InputField field="new_node" placeholder="Enter Node Name" />
+        </p>
         </div>
       }
       <div>
@@ -126,13 +126,17 @@ function MyForm(props) {
       </div>
 
       <div>
-        <label>
+      <label>
           Optionally Link to an existing node: 
           <SelectField
-            field="favoriteColor"
+            field="linked_node"
             options={props.node_names}
           />
         </label>
+      </div>
+      <div>
+      <label> Add media url? </label>
+        <InputField field="media_url" placeholder="Link to an image, video, or sound file" />
       </div>
       <div>
         <button type="submit" disabled={!canSubmit}>
@@ -147,62 +151,12 @@ function MyForm(props) {
   );
 }
 
+function formReset(){
+
+}
+
 // view selected node
 // view subheadings for each edge leaving the node
-var nodes = new DataSet([
-  {"id": "Power", "label": "Power", "type": "Primary", "text": "Hi, this is me posting about power!"},
-  {"id": "Technology", "label": "Technology","type": "Primary"},
-  {"id": "Justice", "label": "Justice","type": "Primary"},
-  {"id": "Industry", "label": "Industry","type": "Primary"},
-  {"id": "State", "label": "State", "type": "Secondary"},
-  {"id": "Surveillance", "label": "Surveillance", "type": "Secondary"},
-  {"id": "Education", "label": "Education", "type": "Secondary"},
-  {"id": "Epistemologies", "label": "Epistemologies", "type": "Secondary"},
-  {"id": "Policy", "label": "Policy", "type": "Secondary"},
-  {"id": "Indivual", "label": "Indivual", "type": "Secondary"},
-  {"id": "Citizen", "label": "Citizen", "type": "Secondary"},
-  {"id": "Algorithms", "label": "Algorithms", "type": "Secondary"},
-  {"id": "Police", "label": "Police", "type": "Secondary"},
-  {"id": "Software", "label": "Software", "type": "Secondary"},
-  {"id": "Transparency", "label": "Transparency", "type": "Secondary"},
-  {"id": "Hardware", "label": "Hardware", "type": "Secondary"},
-  {"id": "Legibility", "label": "Legibility", "type": "Secondary"},
-  {"id": "Accessibility", "label": "Accessibility", "type": "Secondary"},
-  {"id": "Accountability", "label": "Accountability", "type": "Secondary"},
-  {"id": "Corporations", "label": "Corporations", "type": "Secondary"},
-  {"id": "Money", "label": "Money", "type": "Secondary"},
-  {"id": "Undocumented migrants", "label": "Undocumented migrants", "type": "Secondary"},
-  {"id": "Border control", "label": "Border control", "type": "Secondary"}
-  ]);
-
-  // create an array with edges
-  var edges = new DataSet([
-  {"from": "Power","to": "State","label": "link 1 and 2"},
-  {"from": "Power","to": "State","label": "second edge"},
-  {"from": "Police","to": "Surveillance"},
-  {"from": "State","to": "Police"},
-  {"from": "Power","to": "Education"},
-  { "from": "Education", "to": "Epistemologies" },
-  { "from": "Power", "to": "Policy" },
-  { "from": "Power", "to": "Indivual" },
-  { "from": "Indivual", "to": "Citizen" },
-  { "from": "Power", "to": "Undocumented migrants" },
-  { "from": "Undocumented migrants", "to": "Border control" },
-  { "from": "Technology", "to": "Algorithms" },
-  { "from": "Algorithms", "to": "Transparency" },
-  { "from": "Technology", "to": "Surveillance" },
-  { "from": "Surveillance", "to": "Police" },
-  { "from": "Technology", "to": "Software" },
-  { "from": "Technology", "to": "Hardware" },
-  { "from": "Justice", "to": "Transparency" },
-  { "from": "Justice", "to": "Legibility" },
-  { "from": "Justice", "to": "Accessibility" },
-  { "from": "Justice", "to": "Accountability" },
-  { "from": "Industry", "to": "Corporations" },
-  { "from": "Industry", "to": "Money" }
-  ]);
-
-
   async function getDataFromServer (data) {
 
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -211,21 +165,33 @@ var nodes = new DataSet([
   
 function Message (props) {
   return (
-    <li>{props.text}</li>
+    <div>
+    <p style={{backgroundColor: "rgb(9, 95, 163)"
+              }}>{props.text}</p>
+              </div>
   );
 }
 
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {nodes: [], edges: [], selectedNode: null};
+    this.state = {nodes: [], edges: [], selectedNode: null, canEdit: false};
     this.changeSelectedNode = this.changeSelectedNode.bind(this);
     this.addMessageToNode = this.addMessageToNode.bind(this);
+    this.addNewNodeToServer = this.addNewNodeToServer.bind(this);
   }
 
+  checkAccess () {
+    fetch('https://66.29.140.14:3000/can_access')
+    .then(res => res.json())
+    .then((data) => {
+      this.setState({ canEdit: data[0].access });
+    })
+    .catch(console.log)  
+  }
 
   getNodes () {
-    fetch('http://66.29.140.14:3000/nodes')
+    fetch('https://66.29.140.14:3000/nodes')
     .then(res => res.json())
     .then((data) => {
       this.setState({ nodes: data })
@@ -234,7 +200,7 @@ class App extends React.Component {
   }
 
   getEdges () {
-    fetch('http://66.29.140.14:3000/links')
+    fetch('https://66.29.140.14:3000/links')
     .then(res => res.json())
     .then((data) => {
       this.setState({ edges: data })
@@ -243,6 +209,7 @@ class App extends React.Component {
   }
   
   componentDidMount() {
+      this.checkAccess();
       this.getNodes();
       this.getEdges();
   }
@@ -256,13 +223,13 @@ class App extends React.Component {
     console.log(nodeObject);
   }
 
-  postNodeToServer(selectedNode, message){
+  postNewNodeToServer(selectedNode, message){
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: "Hierarchy", label:"Hierarchy" })
   };
-    fetch('http://66.29.140.14:3000/nodes', requestOptions)
+    fetch('https://66.29.140.14:3000/nodes', requestOptions)
         .then(response => response.json())
         .then(data => console.log("post success", data));
   }
@@ -275,11 +242,14 @@ class App extends React.Component {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: selectedNode.id, label:selectedNode.label, messages: messages.concat(message) })
   };
-    fetch('http://66.29.140.14:3000/nodes/' + selectedNode.id, requestOptions)
+    fetch('https://66.29.140.14:3000/nodes/' + selectedNode.id, requestOptions)
         .then(response => response.json())
         .then(data => console.log("update success")); 
   }
 
+  addNewNodeToServer(selectedNode, message, linkedNode){
+    this.postNewNodeToServer(selectedNode, message);   
+  }
   addMessageToNode(selectedNode, message){
     this.updateNodeToServer(selectedNode, message);
   }
@@ -287,25 +257,42 @@ class App extends React.Component {
   render () {
     return (
       <div className="App">
-        <div className="graph" style={{ float:`left` }}>
+        <div className="graph" style={{
+				  height: `1024px`,
+				  width: `70%`,
+				  maxWidth: "1024px",
+				  minWidth: "30%",
+				  maxHeight: "512px",
+          float:`left` 
+        }}>
           <RelatedNetwork
             nodes= {this.state.nodes}
             edges= {this.state.edges}
             changeSelectedNode = {this.changeSelectedNode}
           />
         </div>
-        <div className="form" style={{ float:`right` }}>
-          <header className="selectedNode"> {this.state.selectedNode ? "Selected Node: " + this.state.selectedNode?.id : "Create a new node"} </header>
+        <div className="form" style={{
+				  height: `1024px`,
+				  width: `20%`,
+				  maxWidth: "1024px",
+				  minWidth: "30%",
+				  maxHeight: "512px",
+          float:`right` 
+			  }}>
+          { this.state.selectedNode && <div><header className="selectedNode"> { "Selected Node: "}</header> 
+            <p>{this.state.selectedNode?.id } </p> </div>}
           {this.state.selectedNode?.messages?.map(message => 
           <Message
-          text={message}
+            text={message}
           />
           )}
-          <MyForm
-            selectedNode={this.state.selectedNode}
-            addMessageToNode = {this.addMessageToNode}  
-            node_names = {this.state.nodes.map (n => n.id)}
-          />
+          {this.state.canEdit &&
+            <MyForm
+              selectedNode={this.state.selectedNode}
+              addMessageToNode = {this.addMessageToNode} 
+              addNewNodeToServer = {this.addNewNodeToServer} 
+              node_names = {this.state.nodes.map (n => n.id)}
+            />}
         </div>
       </div>
     );
