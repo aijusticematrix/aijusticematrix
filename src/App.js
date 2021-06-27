@@ -277,7 +277,7 @@ class App extends React.Component {
   };
     fetch('http://66.29.140.14:3000/nodes/' + selectedNode.id, requestOptions)
         .then(response => response.json())
-        .then(data => console.log("update success"));    
+        .then(data => console.log("update success")); 
   }
 
   addMessageToNode(selectedNode, message){
