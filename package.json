@@ -11,7 +11,10 @@
     "react": "^16.14.0",
     "react-d3-graph": "^2.6.0",
     "react-dom": "^16.14.0",
+    "react-form": "^4.0.1",
     "react-scripts": "4.0.3",
+    "vis-data": "^7.1.2",
+    "vis-network": "^9.0.4",
     "web-vitals": "^1.1.2"
   },
   "scripts": {
