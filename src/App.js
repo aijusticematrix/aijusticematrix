@@ -7,7 +7,7 @@ import update from 'immutability-helper';
 
 
 const serverLocal = 'http://localhost:3001';
-const serverRemote = 'https://66.29.140.14:3000/'
+const serverRemote = 'https://66.29.140.14:3000'
 
 const server = serverRemote;
 
