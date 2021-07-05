@@ -3,9 +3,13 @@ import { useForm, useField, splitFormProps } from "react-form";
 import React from "react";
 import RelatedNetwork from "./RelatedNetwork";
 import { DataSet } from "vis-data";
+import update from 'immutability-helper';
 
 
+const serverLocal = 'http://localhost:3001';
+const serverRemote = 'https://66.29.140.14:3000/'
 
+const server = serverRemote;
 
 function SelectField(props) {
   const [field, fieldOptions, { options, ...rest }] = splitFormProps(props);
@@ -100,9 +104,12 @@ function MyForm(props) {
       // has async support out-of-the-box
       if (props.selectedNode)
       {
-        await props.addMessageToNode(props.selectedNode, values.message);
+        await props.addMessageToNode(props.selectedNode, values);
       } else {
-        await props.addNewNodeToServer(props.selectedNode, values.message);             
+        await props.postNewNodeToServer(props.selectedNode, values);
+      }
+      if (values.linked_node) {
+        await props.addLinkToNode(props.selectedNode, values.linked_node);
       }
     },
     debugForm: false
@@ -114,7 +121,7 @@ function MyForm(props) {
       <div>
         <header> Create a new node </header>
         <p>
-          <InputField field="new_node" placeholder="Enter Node Name" />
+          <InputField field="new_node_name" placeholder="Enter Node Name" />
         </p>
         </div>
       }
@@ -151,10 +158,6 @@ function MyForm(props) {
   );
 }
 
-function formReset(){
-
-}
-
 // view selected node
 // view subheadings for each edge leaving the node
   async function getDataFromServer (data) {
@@ -163,11 +166,13 @@ function formReset(){
     return data;
   }
   
-function Message (props) {
+function Message ({text, url}) {
   return (
-    <div>
+    <div style={{backgroundColor: "rgb(220,220,220)"}}>
     <p style={{backgroundColor: "rgb(9, 95, 163)"
-              }}>{props.text}</p>
+              }}>{text}</p>
+    <p style={{backgroundColor: "rgb(9, 25, 103)"
+              }}>{url}</p>
               </div>
   );
 }
@@ -178,11 +183,12 @@ class App extends React.Component {
     this.state = {nodes: [], edges: [], selectedNode: null, canEdit: false};
     this.changeSelectedNode = this.changeSelectedNode.bind(this);
     this.addMessageToNode = this.addMessageToNode.bind(this);
-    this.addNewNodeToServer = this.addNewNodeToServer.bind(this);
+    this.postNewNodeToServer = this.postNewNodeToServer.bind(this);
+    this.addLinkToNode = this.addLinkToNode.bind(this);
   }
 
   checkAccess () {
-    fetch('https://66.29.140.14:3000/can_access')
+    fetch(server + '/can_access')
     .then(res => res.json())
     .then((data) => {
       this.setState({ canEdit: data[0].access });
@@ -191,7 +197,7 @@ class App extends React.Component {
   }
 
   getNodes () {
-    fetch('https://66.29.140.14:3000/nodes')
+    fetch(server + '/nodes')
     .then(res => res.json())
     .then((data) => {
       this.setState({ nodes: data })
@@ -200,7 +206,7 @@ class App extends React.Component {
   }
 
   getEdges () {
-    fetch('https://66.29.140.14:3000/links')
+    fetch(server + '/links')
     .then(res => res.json())
     .then((data) => {
       this.setState({ edges: data })
@@ -223,37 +229,52 @@ class App extends React.Component {
     console.log(nodeObject);
   }
 
-  postNewNodeToServer(selectedNode, message){
+  postNewNodeToServer(selectedNode, {new_node_name, message, media_url}){
+    var messages = [];
+    var newNode = { id: new_node_name, label:new_node_name, messages: message ? messages.concat([message]) : [], url: media_url };
     const requestOptions = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: "Hierarchy", label:"Hierarchy" })
+      body: JSON.stringify(newNode)
   };
-    fetch('https://66.29.140.14:3000/nodes', requestOptions)
+    fetch(server + '/nodes', requestOptions)
         .then(response => response.json())
-        .then(data => console.log("post success", data));
+        .then(data => this.setState({nodes: this.state.nodes.concat([newNode])}));
   }
 
-  updateNodeToServer(selectedNode, message){
-    const messages = selectedNode.messages ? selectedNode.messages : []; 
-    
+  updateNodeToServer(selectedNode, {message, media_url}){
+    console.log(message, media_url)
+    const post = {text: message, url: media_url}
+    const messages = selectedNode.messages ? selectedNode.messages : [];
+    const newNode = { id: selectedNode.id, label:selectedNode.label, messages: messages.concat(post) }
+
     const requestOptions = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: selectedNode.id, label:selectedNode.label, messages: messages.concat(message) })
+      body: JSON.stringify(newNode)
   };
-    fetch('https://66.29.140.14:3000/nodes/' + selectedNode.id, requestOptions)
+    fetch(server + '/nodes/' + selectedNode.id, requestOptions)
         .then(response => response.json())
-        .then(data => console.log("update success")); 
+        .then(data => this.setState({selectedNode: data}))
   }
 
-  addNewNodeToServer(selectedNode, message, linkedNode){
-    this.postNewNodeToServer(selectedNode, message);   
-  }
-  addMessageToNode(selectedNode, message){
-    this.updateNodeToServer(selectedNode, message);
+  addMessageToNode(selectedNode, values){
+    this.updateNodeToServer(selectedNode, values);
   }
 
+  addLinkToNode(from, to) {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({id: from + to, from: from.id, to})
+  };
+  console.log("rew", requestOptions)
+    fetch(server + '/links/', requestOptions)
+        .then(response => response.json())
+        .then(data => this.getEdges())
+  }
+
+  
   render () {
     return (
       <div className="App">
@@ -283,15 +304,18 @@ class App extends React.Component {
             <p>{this.state.selectedNode?.id } </p> </div>}
           {this.state.selectedNode?.messages?.map(message => 
           <Message
-            text={message}
+            text={message?.text}
+            url={message?.url}
           />
           )}
           {this.state.canEdit &&
             <MyForm
               selectedNode={this.state.selectedNode}
               addMessageToNode = {this.addMessageToNode} 
-              addNewNodeToServer = {this.addNewNodeToServer} 
+              postNewNodeToServer = {this.postNewNodeToServer}
+              addLinkToNode = {this.addLinkToNode} 
               node_names = {this.state.nodes.map (n => n.id)}
+
             />}
         </div>
       </div>
@@ -300,3 +324,4 @@ class App extends React.Component {
 }
 
 export default App;
+  
